@@ -1,0 +1,31 @@
+name: Windows build and tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure
+        run: cmake -S . -B build -A x64 -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build build --config Release --parallel
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Package
+        run: cpack --config build\CPackConfig.cmake -C Release
+      - name: Checksums
+        run: python tools/release.py
+      - uses: actions/upload-artifact@v7
+        with:
+          name: VRCVideoProxy-windows-x64
+          path: build/dist/*
+          if-no-files-found: error

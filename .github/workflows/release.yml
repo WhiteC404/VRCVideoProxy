@@ -1,0 +1,28 @@
+name: Draft release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure
+        run: cmake -S . -B build -A x64 -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build build --config Release --parallel
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Package
+        run: cpack --config build\CPackConfig.cmake -C Release
+      - name: Create draft release
+        run: python tools/release.py --publish
+        env:
+          GH_TOKEN: ${{ github.token }}
