@@ -20,6 +20,22 @@ bool EnvironmentMatches() {
 }
 }
 int wmain(int argc, wchar_t** argv) {
+    if (argc > 1 && std::wstring(argv[1]) == L"release") {
+        std::wstring arguments;
+        for (int i = 1; i < argc; ++i) {
+            if (i > 1) arguments += L'\n';
+            arguments += argv[i];
+        }
+        const auto bytes = vrcvp::Utf8(arguments);
+        const auto record = Env(L"VRCVP_TEST_RECORD");
+        HANDLE file = CreateFileW(record.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE) return 80;
+        DWORD written = 0;
+        const bool ok = WriteFile(file, bytes.data(), static_cast<DWORD>(bytes.size()), &written, nullptr) && written == bytes.size();
+        CloseHandle(file);
+        if (!ok) return 81;
+        return Env(L"VRCVP_TEST_FAIL") == L"1" ? 17 : 0;
+    }
     if (argc == 2 && std::wstring(argv[1]) == L"--descendant") return EnvironmentMatches() ? 42 : 71;
     const std::array<std::wstring, 7> expected{L"--version", L"argument with spaces", L"", L"C:\\path with space\\", L"literal\"quote", L"参数✓", L"url?x=1&y=$(literal)%VALUE%"};
     if (argc != static_cast<int>(expected.size()) + 1) return 72;

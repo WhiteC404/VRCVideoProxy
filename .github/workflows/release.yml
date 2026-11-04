@@ -23,6 +23,6 @@ jobs:
       - name: Package
         run: cpack --config build\CPackConfig.cmake -C Release
       - name: Create draft release
-        run: python tools/release.py --publish
+        run: cmake -DPUBLISH=ON -P tools/release.cmake
         env:
           GH_TOKEN: ${{ github.token }}

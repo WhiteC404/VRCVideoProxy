@@ -215,7 +215,7 @@ ZIP 套件輸出至相應建置資料夾內的 `dist` 目錄。應用程式靜�
 
 儲存庫包含 Windows 建置／測試與 Release 草稿工作流程。推送與原始碼版本一致的 `v0.1.0` 標籤後，Release 工作流程會建置套件、產生 SHA-256 校驗值，並建立 GitHub Release 草稿。
 
-檢查草稿內容後再公開發佈。CI 的發佈輔助程式使用執行器上的 Python；使用者執行本工具無需 Python。
+檢查草稿內容後再公開發佈。CI 使用 CMake 腳本核對版本與產生校驗檔，再呼叫 GitHub CLI 建立 Release 草稿。
 
 開發與發佈細節見 [CONTRIBUTING.md](CONTRIBUTING.md)。
 

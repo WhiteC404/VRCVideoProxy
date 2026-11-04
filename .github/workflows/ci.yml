@@ -23,7 +23,7 @@ jobs:
       - name: Package
         run: cpack --config build\CPackConfig.cmake -C Release
       - name: Checksums
-        run: python tools/release.py
+        run: cmake -P tools/release.cmake
       - uses: actions/upload-artifact@v7
         with:
           name: VRCVideoProxy-windows-x64

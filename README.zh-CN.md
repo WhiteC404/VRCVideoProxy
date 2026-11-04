@@ -80,6 +80,6 @@ ZIP 输出到对应构建目录的 `dist` 文件夹。测试会实际启动探�
 
 项目包含 MIT 许可证、CI 和 Release 工作流。建立仓库并推送源码后，推送与源码版本匹配的 `vX.Y.Z` 标签，会构建 ZIP、生成 SHA-256 校验值并创建 **Release 草稿**。检查草稿后再公开发布。
 
-CI 的打包辅助脚本使用 GitHub 运行器已有的 Python；用户运行程序与执行原生测试均无需 Python。
+CI 使用 CMake 脚本核对版本并生成校验文件，再调用 GitHub CLI 创建 Release 草稿。
 
 见 [CONTRIBUTING.md](CONTRIBUTING.md)。本项目是独立社区工具，与 VRChat、UU 或代理客户端厂商没有隶属关系。

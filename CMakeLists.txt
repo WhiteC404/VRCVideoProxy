@@ -33,6 +33,12 @@ if(BUILD_TESTING)
   add_executable(VRCVideoProxyTests tests/tests.cpp)
   target_link_libraries(VRCVideoProxyTests PRIVATE vrcvp_core)
   add_test(NAME core_and_launch_contract COMMAND VRCVideoProxyTests $<TARGET_FILE:VRCVideoProxy> $<TARGET_FILE:VRCVideoProxyProbe>)
+  add_test(NAME release_script_contract COMMAND ${CMAKE_COMMAND}
+    "-DSOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}"
+    "-DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}"
+    "-DVERSION=${PROJECT_VERSION}"
+    "-DGH_PROBE=$<TARGET_FILE:VRCVideoProxyProbe>"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/release_script.cmake")
 endif()
 install(TARGETS VRCVideoProxy RUNTIME DESTINATION .)
 install(FILES config/VRCVideoProxy.ini README.md README.zh-CN.md CONTRIBUTING.md LICENSE THIRD_PARTY.md DESTINATION .)

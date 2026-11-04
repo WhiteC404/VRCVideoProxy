@@ -1,0 +1,50 @@
+cmake_minimum_required(VERSION 3.20)
+
+get_filename_component(root "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
+file(READ "${root}/CMakeLists.txt" source)
+string(REGEX MATCH "project\\(VRCVideoProxy VERSION ([0-9]+\\.[0-9]+\\.[0-9]+) " matched "${source}")
+if(NOT matched)
+  message(FATAL_ERROR "Cannot read the project version.")
+endif()
+set(version "${CMAKE_MATCH_1}")
+string(REPLACE "." "," resource_version "${version}")
+file(READ "${root}/src/resources.rc" resource)
+file(READ "${root}/src/app.manifest" manifest)
+string(FIND "${resource}" "FILEVERSION ${resource_version},0" resource_match)
+string(FIND "${manifest}" "assemblyIdentity version=\"${version}.0\"" manifest_match)
+if(resource_match EQUAL -1 OR manifest_match EQUAL -1)
+  message(FATAL_ERROR "CMake, resource and manifest versions must match before packaging a release.")
+endif()
+
+set(package_name "VRCVideoProxy-${version}-windows-x64.zip")
+set(package "${root}/build/dist/${package_name}")
+if(NOT EXISTS "${package}")
+  message(FATAL_ERROR "Package not found: ${package_name}; run CPack first.")
+endif()
+set(checksum "${root}/build/dist/SHA256SUMS.txt")
+file(SHA256 "${package}" digest)
+file(WRITE "${checksum}" "${digest}  ${package_name}\n")
+message(STATUS "Prepared ${package_name} and SHA256SUMS.txt")
+
+if(NOT PUBLISH AND NOT DRY_RUN)
+  return()
+endif()
+set(tag "$ENV{GITHUB_REF_NAME}")
+if(NOT tag MATCHES "^v[0-9]+\\.[0-9]+\\.[0-9]+$" OR NOT tag STREQUAL "v${version}")
+  message(FATAL_ERROR "Release tag must exactly match the source version, e.g. v${version}.")
+endif()
+if(DRY_RUN)
+  message(STATUS "Validated draft release command for ${tag}; no upload performed.")
+  return()
+endif()
+
+find_program(GH_EXECUTABLE NAMES gh REQUIRED)
+execute_process(
+  COMMAND "${GH_EXECUTABLE}" release create "${tag}" "${package}" "${checksum}"
+          --draft --verify-tag --title "VRC Video Proxy ${tag}" --generate-notes
+  WORKING_DIRECTORY "${root}"
+  RESULT_VARIABLE result
+)
+if(NOT result STREQUAL "0")
+  message(FATAL_ERROR "GitHub CLI release creation failed: ${result}")
+endif()
