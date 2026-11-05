@@ -93,6 +93,7 @@ std::wstring CommandLine(const std::wstring& executable, const std::vector<std::
 std::wstring NormalizeNoProxy(const std::wstring& text) {
     if (text.size() > 16384) Fail(L"The direct-domain list is too long.");
     std::wstring result, token;
+    bool bareLoopback = false, bracketLoopback = false;
     auto append = [&]() {
         if (token.empty()) return;
         if (token.find(L"://") != std::wstring::npos || token.find(L';') != std::wstring::npos ||
@@ -103,6 +104,8 @@ std::wstring NormalizeNoProxy(const std::wstring& text) {
             if (c > 127 || !(iswalnum(c) || c == L'.' || c == L'-' || c == L'_' || c == L':' || c == L'[' || c == L']' || c == L'*'))
                 Fail(L"The direct-domain list contains an invalid hostname.");
         }
+        bareLoopback = bareLoopback || token == L"::1";
+        bracketLoopback = bracketLoopback || token == L"[::1]";
         if (!result.empty()) result += L',';
         result += token;
         token.clear();
@@ -112,6 +115,8 @@ std::wstring NormalizeNoProxy(const std::wstring& text) {
         else token += c;
     }
     append();
+    if (bareLoopback && !bracketLoopback) result += L",[::1]";
+    if (bracketLoopback && !bareLoopback) result += L",::1";
     return result;
 }
 void Validate(Config& config) {
@@ -264,6 +269,17 @@ std::wstring SteamOption(const std::wstring& executable, const Options& options)
 }
 void WriteOutput(const std::wstring& message, bool error) {
     HANDLE output = GetStdHandle(error ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
+    if (!output || output == INVALID_HANDLE_VALUE) {
+        // Attach only when needed, retaining any redirected stream supplied by
+        // the caller because AttachConsole can replace both standard handles.
+        const HANDLE previousOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        const HANDLE previousError = GetStdHandle(STD_ERROR_HANDLE);
+        if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+            if (previousOut && previousOut != INVALID_HANDLE_VALUE) SetStdHandle(STD_OUTPUT_HANDLE, previousOut);
+            if (previousError && previousError != INVALID_HANDLE_VALUE) SetStdHandle(STD_ERROR_HANDLE, previousError);
+        }
+        output = GetStdHandle(error ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
+    }
     if (!output || output == INVALID_HANDLE_VALUE) return;
     DWORD mode = 0, count = 0;
     if (GetConsoleMode(output, &mode)) WriteConsoleW(output, message.data(), static_cast<DWORD>(message.size()), &count, nullptr);

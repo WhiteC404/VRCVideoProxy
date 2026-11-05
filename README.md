@@ -110,7 +110,7 @@ D:\Tools\VRCVideoProxy\
 
 ```ini
 proxy_url=http://127.0.0.1:7890
-no_proxy=localhost,127.0.0.1,::1,ouo.chat,.ouo.chat,bilivideo.com,.bilivideo.com,bilivideo.cn,.bilivideo.cn,bilivideo.net,.bilivideo.net,bilibili.com,.bilibili.com,biliapi.com,.biliapi.com,biliapi.net,.biliapi.net,hdslb.com,.hdslb.com
+no_proxy=localhost,127.0.0.1,::1,[::1],ouo.chat,.ouo.chat,bilivideo.com,.bilivideo.com,bilivideo.cn,.bilivideo.cn,bilivideo.net,.bilivideo.net,bilibili.com,.bilibili.com,biliapi.com,.biliapi.com,biliapi.net,.biliapi.net,hdslb.com,.hdslb.com
 ```
 
 ### 代理地址
@@ -123,6 +123,8 @@ no_proxy=localhost,127.0.0.1,::1,ouo.chat,.ouo.chat,bilivideo.com,.bilivideo.com
 - **INI 檔案中的 `no_proxy` 值需放在同一行。**
 - 建議同時列出 `example.com` 與 `.example.com`，兼顧不同元件對主域名和子域名的匹配差異。
 - 填寫主機或域名，不填完整 URL，也不使用 `*.example.com` 形式。
+
+讀入舊設定時，程式會為 `::1` 或 `[::1]` 補齊另一種回環地址寫法，保留原有代理端口及其他域名。
 
 缺少預設 INI 時，程式使用內建設定；透過 `--config` 明確指定的檔案不存在時，則會回報錯誤。設定視窗只在點擊保存按鈕時寫入檔案。
 

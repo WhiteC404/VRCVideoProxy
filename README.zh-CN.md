@@ -45,12 +45,14 @@
 
 ```ini
 proxy_url=http://127.0.0.1:7890
-no_proxy=localhost,127.0.0.1,::1,.ouo.chat,.bilivideo.com,.bilivideo.cn,.bilivideo.net
+no_proxy=localhost,127.0.0.1,::1,[::1],.ouo.chat,.bilivideo.com,.bilivideo.cn,.bilivideo.net
 ```
 
 发布包的完整默认值还包含原脚本使用的其他 B 站域名。直连列表用逗号或换行分隔；使用 `.example.com` 表示域名及子域，不填写 `https://` 或 Windows 风格的 `*.example.com`。
 
 缺少默认 INI 时使用内置值；通过 `--config` 明确指定的文件不存在时会报错。设置窗口只在点击保存按钮时写入文件。
+
+读取旧设置时，程序会为 `::1` 或 `[::1]` 补齐另一种回环地址写法，保留原有代理端口和其他域名。
 
 ## 开发与构建
 

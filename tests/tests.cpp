@@ -57,7 +57,11 @@ void ConfigAndEnvironment(Temp& temp) {
     vrcvp::Config config;
     vrcvp::Validate(config);
     Check(config.proxy == L"http://127.0.0.1:7890", "Default proxy changed");
-    Check(vrcvp::NormalizeNoProxy(L"localhost\r\n .bilivideo.com, ::1") == L"localhost,.bilivideo.com,::1", "Domain normalization failed");
+    Check(vrcvp::NormalizeNoProxy(L"localhost\r\n .bilivideo.com, ::1") == L"localhost,.bilivideo.com,::1,[::1]", "Domain normalization failed");
+    Check(vrcvp::NormalizeNoProxy(L"[::1]") == L"[::1],::1", "Bracketed loopback alias missing");
+    Check(vrcvp::NormalizeNoProxy(L"::1,[::1]") == L"::1,[::1]", "Loopback aliases duplicated");
+    Check(vrcvp::NormalizeNoProxy(L"").empty(), "Empty direct list changed");
+    Check(config.noProxy.find(L",[::1],") != std::wstring::npos, "Default IPv6 loopback alias missing");
     Throws([] { vrcvp::NormalizeNoProxy(L"https://example.com/"); }, "URL accepted as a domain");
     Throws([] { vrcvp::NormalizeNoProxy(L"*.example.com"); }, "Unsupported wildcard accepted");
     Throws([] { vrcvp::Config c; c.proxy = L"http://localhost:0"; vrcvp::Validate(c); }, "Port zero accepted");
@@ -112,6 +116,22 @@ void Integration(Temp& temp, const std::wstring& launcherSource, const std::wstr
     Throws([&] { vrcvp::Launch(temp.path + L"\\missing.exe",{},config); }, "Missing executable accepted");
     Check(Env(L"https_proxy") == L"parent-sentinel", "Proxy value leaked into parent");
 }
+void ConsoleOutput(const std::wstring& launcher, const std::wstring& probe) {
+    auto command = vrcvp::CommandLine(probe, {L"--console-host", launcher});
+    STARTUPINFOW start{};
+    start.cb = sizeof(start);
+    start.dwFlags = STARTF_USESHOWWINDOW;
+    start.wShowWindow = SW_HIDE;
+    PROCESS_INFORMATION process{};
+    Check(CreateProcessW(probe.c_str(), command.data(), nullptr, nullptr, FALSE, CREATE_NEW_CONSOLE, nullptr, nullptr, &start, &process) != 0, "Cannot start isolated console test host");
+    CloseHandle(process.hThread);
+    const auto wait = WaitForSingleObject(process.hProcess, 15000);
+    if (wait != WAIT_OBJECT_0) TerminateProcess(process.hProcess, 99);
+    DWORD code = 0;
+    GetExitCodeProcess(process.hProcess, &code);
+    CloseHandle(process.hProcess);
+    Check(wait == WAIT_OBJECT_0 && code == 0, "Console output or redirection regression");
+}
 }
 int wmain(int argc, wchar_t** argv) {
     try {
@@ -121,6 +141,7 @@ int wmain(int argc, wchar_t** argv) {
         ConfigAndEnvironment(temp); std::cout << "PASS configuration and isolated Unicode environment\n";
         Parsing(); std::cout << "PASS Steam option and command-line parsing\n";
         Integration(temp, argv[1], argv[2]); std::cout << "PASS real child process, empty/Unicode/special arguments, descendant environment, working directory, exit code and parent isolation\n";
+        ConsoleOutput(argv[1], argv[2]); std::cout << "PASS parent-console stdout/stderr and redirected output\n";
         return 0;
     } catch (const std::exception& error) { std::cerr << "FAIL " << error.what() << '\n'; return 1; }
 }

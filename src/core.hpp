@@ -7,7 +7,7 @@
 namespace vrcvp {
 struct Config {
     std::wstring proxy = L"http://127.0.0.1:7890";
-    std::wstring noProxy = L"localhost,127.0.0.1,::1,ouo.chat,.ouo.chat,bilivideo.com,.bilivideo.com,bilivideo.cn,.bilivideo.cn,bilivideo.net,.bilivideo.net,bilibili.com,.bilibili.com,biliapi.com,.biliapi.com,biliapi.net,.biliapi.net,hdslb.com,.hdslb.com";
+    std::wstring noProxy = L"localhost,127.0.0.1,::1,[::1],ouo.chat,.ouo.chat,bilivideo.com,.bilivideo.com,bilivideo.cn,.bilivideo.cn,bilivideo.net,.bilivideo.net,bilibili.com,.bilibili.com,biliapi.com,.biliapi.com,biliapi.net,.biliapi.net,hdslb.com,.hdslb.com";
 };
 struct IgnoreCase {
     bool operator()(const std::wstring& a, const std::wstring& b) const;
