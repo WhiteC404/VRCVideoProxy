@@ -18,7 +18,7 @@ probe/test executables are not installed.
    MinGW build does not prove the GitHub runner build has succeeded.
 5. Verify the packaged executable in Steam. Update the three version locations
    together: CMakeLists.txt, src/resources.rc, src/app.manifest.
-6. For version 0.1.0, create and push `v0.1.0`. The release job validates the tag
+6. For version 0.1.1, create and push `v0.1.1`. The release job validates the tag
    against the source version before uploading a draft release.
 7. Review the draft's assets and notes, then publish it on GitHub.
 

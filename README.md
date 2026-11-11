@@ -1,6 +1,6 @@
 # VRC Video Proxy
 
-**v0.1.0 · Windows 10 / 11 x64 · C++17**
+**v0.1.1 · Windows 10 / 11 x64 · C++17**
 
 為 VRChat 及其子程序單獨設定 HTTP 代理環境。支援代理環境變數的影片元件可使用本地代理，指定的 B 站與解析站域名則跳過 HTTP 代理。
 
@@ -35,7 +35,7 @@
 從本儲存庫的 **Releases** 頁面下載：
 
 ```text
-VRCVideoProxy-0.1.0-windows-x64.zip
+VRCVideoProxy-0.1.1-windows-x64.zip
 ```
 
 將完整內容解壓縮到固定、可寫的資料夾，例如：
@@ -101,21 +101,28 @@ D:\Tools\VRCVideoProxy\
 - Photon 等即時遊戲通信的 UDP 路由，仍由系統路由、加速器及 TUN 等處理。
 - TUN 開啟時，跳過 HTTP 代理的流量仍可能進入虛擬網卡。
 - 由桌面、VRCX 或其他程序獨立啟動的工具，不會因為 VRChat 的啟動選項而取得這套環境。
+- 只有從 Steam 啟動時才會經過本程式。透過 `vrchat://` 連結、VRCX 直接執行 `launch.exe` 或桌面捷徑啟動時，代理環境可能**不會套用，且不會有任何提示**。
+
+### 解析與播放可能走不同線路
+
+這些環境變數主要影響 yt-dlp 等**解析器**：它們取得影片的實際串流網址。VRChat 內實際拉取串流的播放器（AVPro、Unity Video）通常使用 Windows 系統代理設定，而不是這些環境變數。
+
+因此在「只開 HTTP 代理、不開 TUN 也不開系統代理」的情況下，可能出現解析走代理、播放直連。YouTube 的串流網址可能綁定解析時的出口 IP，兩者不一致時可能播放失敗（例如 403）。若遇到這種情況，請改用 TUN 或系統代理，讓播放器的連線與解析使用同一出口。此行為依播放器與網路環境而異，尚未對所有組合實機驗證。
 
 程式本身不發起網路請求，也不修改註冊表、全域環境變數、Steam 檔案、遊戲程式、yt-dlp、反作弊設定或代理訂閱；不收集日誌或傳送遙測。
 
 ## 設定檔
 
-`VRCVideoProxy.ini` 使用 UTF-8 編碼，與 `.exe` 放在同一個資料夾。0.1.0 的完整預設值為：
+`VRCVideoProxy.ini` 使用 UTF-8 編碼，與 `.exe` 放在同一個資料夾。0.1.1 的完整預設值為：
 
 ```ini
 proxy_url=http://127.0.0.1:7890
-no_proxy=localhost,127.0.0.1,::1,[::1],ouo.chat,.ouo.chat,bilivideo.com,.bilivideo.com,bilivideo.cn,.bilivideo.cn,bilivideo.net,.bilivideo.net,bilibili.com,.bilibili.com,biliapi.com,.biliapi.com,biliapi.net,.biliapi.net,hdslb.com,.hdslb.com
+no_proxy=localhost,127.0.0.1,::1,[::1],localhost.youtube.com,ouo.chat,.ouo.chat,bilivideo.com,.bilivideo.com,bilivideo.cn,.bilivideo.cn,bilivideo.net,.bilivideo.net,bilibili.com,.bilibili.com,biliapi.com,.biliapi.com,biliapi.net,.biliapi.net,hdslb.com,.hdslb.com
 ```
 
 ### 代理地址
 
-`proxy_url` 接受 HTTP 代理地址，例如 `http://127.0.0.1:7890`。0.1.0 的設定介面不接受 SOCKS 地址，或包含帳號、密碼、路徑及查詢參數的代理 URL。
+`proxy_url` 接受 HTTP 代理地址，例如 `http://127.0.0.1:7890`。設定介面不接受 SOCKS 地址，或包含帳號、密碼、路徑及查詢參數的代理 URL。
 
 ### 直連域名
 
@@ -127,6 +134,16 @@ no_proxy=localhost,127.0.0.1,::1,[::1],ouo.chat,.ouo.chat,bilivideo.com,.bilivid
 讀入舊設定時，程式會為 `::1` 或 `[::1]` 補齊另一種回環地址寫法，保留原有代理端口及其他域名。
 
 缺少預設 INI 時，程式使用內建設定；透過 `--config` 明確指定的檔案不存在時，則會回報錯誤。設定視窗只在點擊保存按鈕時寫入檔案。
+
+## 與 VRCVideoCacher 一起使用
+
+VRCVideoCacher 是獨立啟動的背景程式，只為 VRChat 加啟動前綴，不會改變由 VRCX、Steam 或桌面先啟動的 Cacher。
+
+0.1.1 的預設直連列表已加入本地播放地址 `localhost.youtube.com`。已有 INI 可點擊 **添加 Cacher 直连域名**，再保存；這個按鈕會保留自訂代理端口及原有域名。
+
+Steam 版：在 **VRChat 和 VRCVideoCacher 兩個條目**的啟動選項中都使用同一個 `"程式完整路徑\VRCVideoProxy.exe" %command%` 前綴。先啟動 Cacher，再啟動 VRChat。已在執行的 Cacher 需先退出再重新啟動，才能取得新環境。
+
+獨立版、TUN 設定及驗證方法見 [相容說明](docs/VRCVideoCacher.md)。快取、Cookie 與影片解析仍由 Cacher 處理，本專案不安裝或修改它，也不讀取帳號資料。
 
 ## 命令列參數
 
@@ -201,7 +218,7 @@ ZIP 套件輸出至相應建置資料夾內的 `dist` 目錄。應用程式靜�
 
 ## 測試與版本範圍
 
-0.1.0 已在本機以 MinGW-w64 建置並通過原生程序測試，涵蓋：
+本機以 MinGW-w64 建置並通過原生程序測試，涵蓋：
 
 - 中文、空格路徑與空參數。
 - 引號、反斜線及特殊字元的傳遞。
@@ -209,13 +226,15 @@ ZIP 套件輸出至相應建置資料夾內的 `dist` 目錄。應用程式靜�
 - 原始啟動器的工作目錄及退出碼。
 - 設定驗證，以及設定介面的保存與複製操作。
 
-這些檢查不等於每種代理、加速器與遊戲環境均已完成實機驗證。VRCVideoCacher 等獨立快取工具的整合不列為本版已驗證功能；請依自己的環境確認實際影片播放情況。
+- 獨立啟動的快取服務探針取得代理與本地直連環境（Cacher 相容）。
 
-0.1.0 發行檔尚未進行數位簽章。儲存庫提供的 GitHub Actions 工作流程需要實際執行，才能確認遠端 MSVC 建置是否通過。
+這些檢查不等於每種代理、加速器與遊戲環境均已完成實機驗證。真實 VRCVideoCacher 的快取、登入狀態與 SABR 播放不列為已驗證功能；請依自己的環境確認實際影片播放情況。
+
+發行檔尚未進行數位簽章。儲存庫提供的 GitHub Actions 工作流程需要實際執行，才能確認遠端 MSVC 建置是否通過。
 
 ## 發佈
 
-儲存庫包含 Windows 建置／測試與 Release 草稿工作流程。推送與原始碼版本一致的 `v0.1.0` 標籤後，Release 工作流程會建置套件、產生 SHA-256 校驗值，並建立 GitHub Release 草稿。
+儲存庫包含 Windows 建置／測試與 Release 草稿工作流程。推送與原始碼版本一致的 `vX.Y.Z` 標籤後，Release 工作流程會建置套件、產生 SHA-256 校驗值，並建立 GitHub Release 草稿。
 
 檢查草稿內容後再公開發佈。CI 使用 CMake 腳本核對版本與產生校驗檔，再呼叫 GitHub CLI 建立 Release 草稿。
 

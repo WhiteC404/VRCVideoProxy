@@ -85,6 +85,17 @@ int wmain(int argc, wchar_t** argv) {
         return Env(L"VRCVP_TEST_FAIL") == L"1" ? 17 : 0;
     }
     if (argc == 2 && std::wstring(argv[1]) == L"--descendant") return EnvironmentMatches() ? 42 : 71;
+    if (argc == 2 && std::wstring(argv[1]) == L"--cacher") {
+        const auto list = L"," + Env(L"NO_PROXY") + L",";
+        const bool ready = Env(L"HTTP_PROXY") == L"http://127.0.0.1:17890" &&
+            Env(L"HTTPS_PROXY") == L"http://127.0.0.1:17890" &&
+            list.find(L",localhost.youtube.com,") != std::wstring::npos &&
+            list.find(L",127.0.0.1,") != std::wstring::npos &&
+            list.find(L",::1,") != std::wstring::npos &&
+            list.find(L",[::1],") != std::wstring::npos &&
+            list.find(L",localhost,") != std::wstring::npos;
+        return ready ? 43 : 77;
+    }
     const std::array<std::wstring, 7> expected{L"--version", L"argument with spaces", L"", L"C:\\path with space\\", L"literal\"quote", L"参数✓", L"url?x=1&y=$(literal)%VALUE%"};
     if (argc != static_cast<int>(expected.size()) + 1) return 72;
     for (size_t i = 0; i < expected.size(); ++i) if (argv[i + 1] != expected[i]) return 73;

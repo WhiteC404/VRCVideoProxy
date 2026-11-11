@@ -62,6 +62,14 @@ void ConfigAndEnvironment(Temp& temp) {
     Check(vrcvp::NormalizeNoProxy(L"::1,[::1]") == L"::1,[::1]", "Loopback aliases duplicated");
     Check(vrcvp::NormalizeNoProxy(L"").empty(), "Empty direct list changed");
     Check(config.noProxy.find(L",[::1],") != std::wstring::npos, "Default IPv6 loopback alias missing");
+    Check(config.noProxy.find(L"localhost.youtube.com") != std::wstring::npos, "Default Cacher playback alias is missing");
+    vrcvp::Config migrated{L"http://127.0.0.1:17890", L"LOCALHOST,.example.com"};
+    vrcvp::EnableCacherCompatibility(migrated);
+    Check(migrated.proxy == L"http://127.0.0.1:17890" && migrated.noProxy.find(L".example.com") != std::wstring::npos, "Cacher migration overwrote user settings");
+    Check(migrated.noProxy == L"LOCALHOST,.example.com,127.0.0.1,::1,[::1],localhost.youtube.com", "Cacher migration failed to retain local hosts without duplicates");
+    const auto migratedOnce = migrated.noProxy;
+    vrcvp::EnableCacherCompatibility(migrated);
+    Check(migrated.noProxy == migratedOnce, "Cacher migration is not idempotent");
     Throws([] { vrcvp::NormalizeNoProxy(L"https://example.com/"); }, "URL accepted as a domain");
     Throws([] { vrcvp::NormalizeNoProxy(L"*.example.com"); }, "Unsupported wildcard accepted");
     Throws([] { vrcvp::Config c; c.proxy = L"http://localhost:0"; vrcvp::Validate(c); }, "Port zero accepted");
@@ -112,6 +120,10 @@ void Integration(Temp& temp, const std::wstring& launcherSource, const std::wstr
     // its custom file and replace only its own child's proxy environment.
     Check(vrcvp::Launch(launcher,args,vrcvp::Config{}) == 42, "Real process, CRT argv, working directory, environment or descendant inheritance failed");
     Check(vrcvp::InheritedEnvironment() == environmentBefore, "Launching modified the calling process environment");
+    vrcvp::EnableCacherCompatibility(config);
+    vrcvp::WriteConfig(path, config);
+    Check(vrcvp::Launch(launcher,{L"--no-ui",L"--config",path,probe,L"--cacher"},vrcvp::Config{}) == 43, "An independently launched Cacher did not receive the proxy and local playback bypass environment");
+    Check(vrcvp::InheritedEnvironment() == environmentBefore, "Cacher launch changed the parent environment");
     Check(vrcvp::Launch(launcher,{L"--no-ui",L"--config",temp.path + L"\\missing.ini",probe},config) == 2, "Missing custom config did not fail cleanly");
     Throws([&] { vrcvp::Launch(temp.path + L"\\missing.exe",{},config); }, "Missing executable accepted");
     Check(Env(L"https_proxy") == L"parent-sentinel", "Proxy value leaked into parent");

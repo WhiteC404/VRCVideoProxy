@@ -5,7 +5,7 @@
 
 namespace vrcvp {
 namespace {
-constexpr int ProxyEdit = 101, NoProxyEdit = 102, SteamEdit = 103, SaveCopy = 104, Defaults = 105, Close = 106, Status = 107;
+constexpr int ProxyEdit = 101, NoProxyEdit = 102, SteamEdit = 103, SaveCopy = 104, Defaults = 105, Close = 106, Status = 107, Cacher = 108;
 struct SettingsState {
     std::wstring executable;
     Options options;
@@ -81,6 +81,7 @@ LRESULT CALLBACK Procedure(HWND window, UINT message, WPARAM wParam, LPARAM lPar
             Control(window, state, L"STATIC", L"保存后，将这一行粘贴到 Steam → VRChat → 属性 → 启动选项。", 0, 24, 454, 740, 24);
             Control(window, state, L"BUTTON", L"保存并复制启动选项", WS_TABSTOP | BS_DEFPUSHBUTTON, 24, 500, 228, 36, SaveCopy);
             Control(window, state, L"BUTTON", L"恢复默认值", WS_TABSTOP | BS_PUSHBUTTON, 272, 500, 146, 36, Defaults);
+            Control(window, state, L"BUTTON", L"添加 Cacher 直连域名", WS_TABSTOP | BS_PUSHBUTTON, 438, 500, 180, 36, Cacher);
             Control(window, state, L"BUTTON", L"关闭", WS_TABSTOP | BS_PUSHBUTTON, 638, 500, 126, 36, Close);
             Control(window, state, L"STATIC", L"配置只作用于本次启动的游戏及其子进程。", 0, 24, 552, 740, 34, Status);
             Populate(window, state->initial);
@@ -102,6 +103,13 @@ LRESULT CALLBACK Procedure(HWND window, UINT message, WPARAM wParam, LPARAM lPar
                 Populate(window, Config{});
                 SetWindowTextW(GetDlgItem(window, Status), L"已填入默认值；点击“保存并复制启动选项”后生效。");
                 return 0;
+            case Cacher: {
+                Config config{Text(GetDlgItem(window, ProxyEdit)), Text(GetDlgItem(window, NoProxyEdit))};
+                EnableCacherCompatibility(config);
+                SetWindowTextW(GetDlgItem(window, NoProxyEdit), Lines(config.noProxy).c_str());
+                SetWindowTextW(GetDlgItem(window, Status), L"已补充本地播放域名；保存后生效。Cacher 也需单独通过本启动器启动。");
+                return 0;
+            }
             case Close: DestroyWindow(window); return 0;
             default: break;
             }

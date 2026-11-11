@@ -37,6 +37,10 @@
 
 它不会决定全部游戏流量的线路。实时游戏 UDP 仍由系统路由、UU 和 TUN 等决定；TUN 开启时，跳过 HTTP 代理的请求仍可能被虚拟网卡接管。视频加载速度与 VRC 内 Ping 需要分别判断。
 
+**解析与播放可能走不同线路。** 这些环境变量主要影响 yt-dlp 等解析器；VRChat 内实际拉取串流的播放器（AVPro、Unity Video）通常使用 Windows 系统代理，而不读取这些变量。只开 HTTP 代理、不开 TUN 或系统代理时，可能出现解析走代理、播放直连；YouTube 串流地址可能绑定解析时的出口 IP，不一致时可能播放失败（如 403）。遇到时请改用 TUN 或系统代理。此行为尚未对所有组合实机验证。
+
+只有从 Steam 启动时才会经过本程序。通过 `vrchat://` 链接、VRCX 直接运行 `launch.exe` 或桌面快捷方式启动时，代理环境可能不会生效，且没有任何提示。
+
 程序本身不发起网络请求，不修改注册表、全局环境、Steam 文件、游戏文件、yt-dlp、反作弊设置或代理订阅，也不收集日志和遥测。
 
 ## 配置
@@ -45,7 +49,7 @@
 
 ```ini
 proxy_url=http://127.0.0.1:7890
-no_proxy=localhost,127.0.0.1,::1,[::1],.ouo.chat,.bilivideo.com,.bilivideo.cn,.bilivideo.net
+no_proxy=localhost,127.0.0.1,::1,[::1],localhost.youtube.com,.ouo.chat,.bilivideo.com,.bilivideo.cn,.bilivideo.net
 ```
 
 发布包的完整默认值还包含原脚本使用的其他 B 站域名。直连列表用逗号或换行分隔；使用 `.example.com` 表示域名及子域，不填写 `https://` 或 Windows 风格的 `*.example.com`。
@@ -53,6 +57,16 @@ no_proxy=localhost,127.0.0.1,::1,[::1],.ouo.chat,.bilivideo.com,.bilivideo.cn,.b
 缺少默认 INI 时使用内置值；通过 `--config` 明确指定的文件不存在时会报错。设置窗口只在点击保存按钮时写入文件。
 
 读取旧设置时，程序会为 `::1` 或 `[::1]` 补齐另一种回环地址写法，保留原有代理端口和其他域名。
+
+## 与 VRCVideoCacher 一起使用
+
+可以给独立启动的 VRCVideoCacher 也提供相同代理环境。只给 VRChat 加启动前缀，不会改变由 VRCX、Steam 或桌面先启动的 Cacher 进程。
+
+0.1.1 默认直连列表已加入本地播放地址 `localhost.youtube.com`。已有 INI 可点击 **添加 Cacher 直连域名**，再保存；这个按钮保留自定义代理端口及原域名列表。
+
+Steam 版：在 **VRChat 和 VRCVideoCacher 两个条目**的启动选项中都使用同一个 `"程序完整路径\VRCVideoProxy.exe" %command%` 前缀。先启动 Cacher，再启动 VRChat。已经运行的 Cacher 需自行退出后重新启动，才能继承新环境。
+
+独立版、TUN 设置及验证方法见 [兼容说明](docs/VRCVideoCacher.md)。缓存、Cookie 和具体的视频提取仍由 Cacher 处理，本项目不安装或替换它，也不读取账号数据。
 
 ## 开发与构建
 

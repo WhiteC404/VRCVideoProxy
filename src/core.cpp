@@ -119,6 +119,24 @@ std::wstring NormalizeNoProxy(const std::wstring& text) {
     if (bracketLoopback && !bareLoopback) result += L",::1";
     return result;
 }
+void EnableCacherCompatibility(Config& config) {
+    config.noProxy = NormalizeNoProxy(config.noProxy);
+    const std::vector<std::wstring> required{L"localhost", L"127.0.0.1", L"::1", L"[::1]", L"localhost.youtube.com"};
+    for (const auto& host : required) {
+        bool present = false;
+        size_t offset = 0;
+        while (offset < config.noProxy.size()) {
+            const auto end = config.noProxy.find(L',', offset);
+            const auto value = config.noProxy.substr(offset, end == std::wstring::npos ? end : end - offset);
+            if (_wcsicmp(value.c_str(), host.c_str()) == 0) { present = true; break; }
+            offset = end == std::wstring::npos ? config.noProxy.size() : end + 1;
+        }
+        if (!present) {
+            if (!config.noProxy.empty()) config.noProxy += L',';
+            config.noProxy += host;
+        }
+    }
+}
 void Validate(Config& config) {
     config.proxy = Trim(config.proxy);
     if (config.proxy.empty() || config.proxy.size() > 2048 || config.proxy.find_first_of(L"\r\n\t ") != std::wstring::npos || config.proxy.find(L'\0') != std::wstring::npos)
